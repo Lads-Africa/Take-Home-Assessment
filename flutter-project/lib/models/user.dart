@@ -11,7 +11,6 @@ class User {
     this.role,
   });
 
-  // BUG: No null safety check - will crash if JSON is missing required fields
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],

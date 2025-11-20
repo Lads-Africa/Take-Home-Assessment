@@ -13,8 +13,6 @@ class Order {
     this.items,
   });
 
-  // BUG: No validation for status values
-  // BUG: No null safety check
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       id: json['id'],
@@ -53,7 +51,6 @@ class OrderItem {
     required this.price,
   });
 
-  // BUG: No validation for quantity > 0
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       id: json['id'],

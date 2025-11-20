@@ -15,15 +15,13 @@ class Product {
     this.category,
   });
 
-  // BUG: No validation - price could be negative or null
-  // BUG: No null safety check for required fields
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'],
       name: json['name'],
       description: json['description'],
-      price: json['price']?.toDouble() ?? 0.0, // BUG: Defaults to 0 if null
-      stock: json['stock'] ?? 0, // BUG: Defaults to 0 if null
+      price: json['price']?.toDouble() ?? 0.0,
+      stock: json['stock'] ?? 0,
       category: json['category'],
     );
   }
@@ -39,7 +37,6 @@ class Product {
     };
   }
 
-  // BUG: No validation - could return true for negative stock
   bool get isInStock => stock > 0;
 }
 

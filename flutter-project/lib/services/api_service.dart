@@ -7,10 +7,6 @@ import '../models/order.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // BUG: No singleton pattern - creates new instance every time
-  // BUG: No token refresh logic
-  // BUG: No error handling wrapper
-
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
@@ -35,9 +31,6 @@ class ApiService {
     };
   }
 
-  // BUG: No timeout handling
-  // BUG: No retry logic
-  // BUG: No network connectivity check
   Future<Map<String, dynamic>> _makeRequest(
     String method,
     String endpoint, {
@@ -73,12 +66,9 @@ class ApiService {
         throw Exception('Unsupported HTTP method');
     }
 
-    // BUG: No handling for different status codes (401, 403, 500, etc.)
-    // BUG: Assumes all responses are JSON
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
     } else {
-      // BUG: Generic error - doesn't provide useful error messages
       throw Exception('Request failed with status: ${response.statusCode}');
     }
   }
@@ -91,16 +81,11 @@ class ApiService {
         body: {'email': email, 'password': password},
       );
 
-      // BUG: No validation that response contains access_token
-      // BUG: No validation that response contains user
       final token = response['access_token'];
       await _saveToken(token);
 
-      // BUG: Assumes user object exists - will crash if missing
       return User.fromJson(response['user']);
     } catch (e) {
-      // BUG: Doesn't handle specific error types
-      // BUG: Error message not user-friendly
       rethrow;
     }
   }
@@ -110,7 +95,6 @@ class ApiService {
       await _makeRequest('POST', '/logout');
       await _removeToken();
     } catch (e) {
-      // BUG: Even if logout fails, token is removed
       await _removeToken();
       rethrow;
     }
@@ -118,14 +102,11 @@ class ApiService {
 
   Future<User> getCurrentUser() async {
     final response = await _makeRequest('GET', '/user');
-    // BUG: No null check - will crash if user is null
     return User.fromJson(response);
   }
 
   Future<List<Product>> getProducts() async {
     final response = await _makeRequest('GET', '/products');
-    // BUG: Assumes response is a list - will crash if it's not
-    // BUG: No handling for empty list
     return (response as List)
         .map((json) => Product.fromJson(json))
         .toList();
@@ -133,14 +114,11 @@ class ApiService {
 
   Future<Product> getProduct(int id) async {
     final response = await _makeRequest('GET', '/products/$id');
-    // BUG: No null check
     return Product.fromJson(response);
   }
 
   Future<List<Order>> getOrders() async {
     final response = await _makeRequest('GET', '/orders');
-    // BUG: Assumes response is a list
-    // BUG: No error handling if orders is null
     if (response is List) {
       return response.map((json) => Order.fromJson(json)).toList();
     }
@@ -149,7 +127,6 @@ class ApiService {
 
   Future<Order> getOrder(int id) async {
     final response = await _makeRequest('GET', '/orders/$id');
-    // BUG: No null check
     return Order.fromJson(response);
   }
 }

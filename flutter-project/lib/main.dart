@@ -17,9 +17,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const LoginScreen(),
-      // BUG: No error handling widget
-      // BUG: No route management
-      // BUG: No theme switching
     );
   }
 }

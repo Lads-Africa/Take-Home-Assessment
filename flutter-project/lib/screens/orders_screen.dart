@@ -37,7 +37,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      // BUG: Generic error handling
       setState(() {
         _errorMessage = 'Failed to load orders: ${e.toString()}';
         _isLoading = false;
@@ -78,7 +77,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         itemCount: _orders.length,
                         itemBuilder: (context, index) {
                           final order = _orders[index];
-                          // BUG: No null check
                           return Card(
                             margin: const EdgeInsets.all(8.0),
                             child: ListTile(
@@ -91,8 +89,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 ),
                               ),
                               onTap: () {
-                                // BUG: No order detail screen
-                                // BUG: Doesn't show order items
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Order #${order.id} details'),

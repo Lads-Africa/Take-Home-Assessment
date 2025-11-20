@@ -15,9 +15,6 @@ return new class extends Migration
             $table->integer('quantity');
             $table->decimal('price', 10, 2);
             $table->timestamps();
-            
-            // BUG: Missing check constraint for quantity > 0
-            // BUG: Missing check constraint for price > 0
         });
     }
 

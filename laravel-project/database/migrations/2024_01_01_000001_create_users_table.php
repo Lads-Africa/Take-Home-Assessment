@@ -14,11 +14,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default('user'); // BUG: No enum constraint - allows invalid roles
+            $table->string('role')->default('user');
             $table->rememberToken();
             $table->timestamps();
-            
-            // BUG: Missing index on role column for faster admin queries
         });
     }
 

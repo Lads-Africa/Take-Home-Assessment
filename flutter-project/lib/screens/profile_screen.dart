@@ -17,7 +17,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   User? _user;
   bool _isLoading = false;
 
-  // BUG: User passed in but refetched anyway
   @override
   void initState() {
     super.initState();
@@ -37,7 +36,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      // BUG: Error handling - doesn't show error
       setState(() {
         _isLoading = false;
       });
@@ -54,7 +52,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      // BUG: Logs out even if API call fails
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -72,7 +69,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    // BUG: No null check
     final user = _user!;
 
     return Scaffold(
@@ -84,7 +80,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // BUG: No profile picture
             Text(
               'Name: ${user.name}',
               style: Theme.of(context).textTheme.titleLarge,

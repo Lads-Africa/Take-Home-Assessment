@@ -20,11 +20,7 @@ class ProductCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // BUG: No description shown
-            // BUG: No category shown
             Text('\$${product.price.toStringAsFixed(2)}'),
-            // BUG: Stock status not shown
-            // BUG: No visual indicator for out of stock
           ],
         ),
         trailing: product.isInStock

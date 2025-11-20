@@ -12,13 +12,10 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->decimal('price', 10, 2); // BUG: No check constraint to prevent negative prices
-            $table->integer('stock')->default(0); // BUG: No check constraint to prevent negative stock
+            $table->decimal('price', 10, 2);
+            $table->integer('stock')->default(0);
             $table->string('category')->nullable();
             $table->timestamps();
-            
-            // BUG: Missing index on category for faster filtering
-            // BUG: Missing index on price for sorting
         });
     }
 

@@ -15,12 +15,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _apiService = ApiService();
-  
+
   bool _isLoading = false;
   String? _errorMessage;
-
-  // BUG: Controllers not disposed - memory leak
-  // BUG: No state management - using setState directly
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                 ),
-                // BUG: Basic email validation - doesn't catch all edge cases
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
@@ -61,8 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
-                // BUG: No password strength validation
-                // BUG: No minimum length check
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
@@ -71,7 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: 24),
-              // BUG: Error message not cleared when user starts typing again
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -107,15 +100,11 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // BUG: No input sanitization
-      // BUG: Password stored in controller (security risk)
       final user = await _apiService.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
-      // BUG: No null check for user
-      // BUG: No navigation guard
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -124,8 +113,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      // BUG: Generic error message - not user-friendly
-      // BUG: Doesn't handle specific error types (network, auth, etc.)
       setState(() {
         _errorMessage = 'Login failed: ${e.toString()}';
         _isLoading = false;

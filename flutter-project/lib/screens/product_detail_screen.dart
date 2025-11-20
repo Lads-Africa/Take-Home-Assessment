@@ -22,9 +22,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Product? _product;
   bool _isLoading = false;
 
-  // BUG: Fetches product again even though it's already passed in
-  // BUG: No caching - refetches every time
-
   @override
   void initState() {
     super.initState();
@@ -44,8 +41,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      // BUG: Error handling - doesn't show error to user
-      // BUG: Still shows old product data even if fetch fails
       setState(() {
         _isLoading = false;
       });
@@ -53,8 +48,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _addToCart() async {
-    // BUG: No cart functionality implemented
-    // BUG: No feedback to user
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Feature not implemented')),
     );
@@ -68,7 +61,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
-    // BUG: No null check - will crash if _product is null
     final product = _product!;
 
     return Scaffold(
@@ -80,7 +72,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // BUG: No image display - product might have images
             Text(
               product.name,
               style: Theme.of(context).textTheme.headlineMedium,
@@ -93,8 +84,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
             ),
             const SizedBox(height: 16),
-            // BUG: No stock display
-            // BUG: No category display
             if (product.description != null) ...[
               Text(
                 'Description',
@@ -104,7 +93,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Text(product.description!),
               const SizedBox(height: 16),
             ],
-            // BUG: Button enabled even if product is out of stock
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

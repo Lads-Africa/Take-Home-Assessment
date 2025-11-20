@@ -22,9 +22,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // BUG: No state management provider - using setState
-  // BUG: Products loaded every time screen is built - no caching
-
   @override
   void initState() {
     super.initState();
@@ -44,8 +41,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      // BUG: Error state not properly handled
-      // BUG: No retry mechanism
       setState(() {
         _errorMessage = 'Failed to load products: ${e.toString()}';
         _isLoading = false;
@@ -108,11 +103,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       onRefresh: _loadProducts,
                       child: ListView.builder(
                         itemCount: _products.length,
-                        // BUG: No pagination - loads all products at once
-                        // BUG: No lazy loading
                         itemBuilder: (context, index) {
                           final product = _products[index];
-                          // BUG: No null check for product
                           return ProductCard(
                             product: product,
                             onTap: () {
