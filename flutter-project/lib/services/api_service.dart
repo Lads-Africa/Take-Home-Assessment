@@ -69,25 +69,24 @@ class ApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Request failed with status: ${response.statusCode}');
+      throw Exception('Request failed with status: ${response.statusCode} - ${response.body}');
     }
   }
 
+  // -------------------------------
+  // AUTH
+  // -------------------------------
   Future<User> login(String email, String password) async {
-    try {
-      final response = await _makeRequest(
-        'POST',
-        '/login',
-        body: {'email': email, 'password': password},
-      );
+    final response = await _makeRequest(
+      'POST',
+      '/login',
+      body: {'email': email, 'password': password},
+    );
 
-      final token = response['access_token'];
-      await _saveToken(token);
+    final token = response['access_token'];
+    await _saveToken(token);
 
-      return User.fromJson(response['user']);
-    } catch (e) {
-      rethrow;
-    }
+    return User.fromJson(response['user']);
   }
 
   Future<void> logout() async {
@@ -105,10 +104,31 @@ class ApiService {
     return User.fromJson(response);
   }
 
+  // -------------------------------
+  // PRODUCTS
+  // -------------------------------
   Future<List<Product>> getProducts() async {
     final response = await _makeRequest('GET', '/products');
-    return (response as List)
-        .map((json) => Product.fromJson(json))
+
+    // response may be: List OR {data: [...]} depending on API
+    dynamic raw = response;
+
+    if (response is Map) {
+      if (response['data'] is List) {
+        raw = response['data'];
+      } else if (response['products'] is List) {
+        raw = response['products'];
+      } else {
+        raw = response.values.toList();
+      }
+    }
+
+    if (raw is! List) {
+      throw Exception('Unexpected products shape: ${response.runtimeType}');
+    }
+
+    return raw
+        .map<Product>((json) => Product.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -117,12 +137,46 @@ class ApiService {
     return Product.fromJson(response);
   }
 
+  // -------------------------------
+  // ORDERS
+  // -------------------------------
   Future<List<Order>> getOrders() async {
-    final response = await _makeRequest('GET', '/orders');
-    if (response is List) {
-      return response.map((json) => Order.fromJson(json)).toList();
+    final res = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/orders'),
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception('Failed to load orders: ${res.statusCode} ${res.body}');
     }
-    return [];
+
+    final decoded = jsonDecode(res.body);
+    dynamic raw = decoded;
+
+    // Support multiple possible response shapes
+    if (decoded is Map) {
+      if (decoded['data'] is List) {
+        raw = decoded['data'];
+      } else if (decoded['orders'] is List) {
+        raw = decoded['orders'];
+      } else {
+        raw = decoded.values.toList();
+      }
+    }
+
+    if (raw is! List) {
+      throw Exception(
+        'Unexpected orders response shape: ${decoded.runtimeType}',
+      );
+    }
+
+    return raw
+        .map<Order>(
+          (json) => Order.fromJson(json as Map<String, dynamic>),
+        )
+        .toList();
   }
 
   Future<Order> getOrder(int id) async {
@@ -130,4 +184,3 @@ class ApiService {
     return Order.fromJson(response);
   }
 }
-

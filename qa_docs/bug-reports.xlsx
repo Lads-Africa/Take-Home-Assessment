@@ -1,0 +1,959 @@
+Bug ID,Title,Description,Steps to Reproduce,Expected,Actual,Severity,Priority,Environment,Screenshot,Notes,Source
+API-AUTH-USER-001,GET /api/user returns 500 instead of 401 when called without Authorization header,"When the /api/user endpoint is accessed without an Authorization header, the request should be rejected with a standard 401 Unauthorized response. Instead, the API throws an unhandled exception and returns a 500 Internal Server Error along with a full HTML error page.","Open Postman
+
+Set request to: GET http://localhost:8000/api/user
+
+Set Authorization = No Auth
+
+Send request","401 Unauthorized
+{
+    ""message"": ""Unauthenticated.""
+}","500 Internal Server Error
+
+HTML response
+
+Stack trace referencing missing login route",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,This occurs because Laravels Auth middleware attempts to redirect to a non-existent login route when authentication fails.,Manual API Testing
+API-AUTH-REGISTER-001,Register endpoint returns 500 error for duplicate email instead of validation error,"When attempting to register a user with an email address that already exists in the system, the API returns a 500 Internal Server Error and an HTML Laravel error page exposing a SQL duplicate-key exception. The API should instead return a user-friendly validation error in JSON format and an appropriate 4xx status code.","Open Postman and select the QA Assessment Local environment.
+
+Send a POST {{base_url}}/api/register request with body:
+
+{
+  ""name"": ""QA User"",
+  ""email"": ""qa_duplicate@test.com"",
+  ""password"": ""password"",
+  ""password_confirmation"": ""password""
+}
+
+
+and confirm it succeeds.
+
+Send the same POST {{base_url}}/api/register request again with the same email (qa_duplicate@test.com).
+
+Observe the response.","Status code: 422 Unprocessable Entity (or 409 Conflict).
+
+JSON response with a validation error, e.g.:
+
+{
+  ""message"": ""The email has already been taken.""
+}
+No database exception or HTML stack trace is exposed.","Status code: 500 Internal Server Error.
+
+Response body is an HTML Laravel error page containing a SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry ... for key 'users_email_unique' stack trace.",High,P1,"Laravel QA Assessment API (local)
+
+Base URL: http://127.0.0.1:8000
+
+Database: seeded default data
+
+Postman desktop client
+
+OS: Linux",,"This should be handled by validation before insert, or by catching the DB exception and converting it to a standard API error response.",Manual API Testing
+API-AUTH-REGISTER-002,Register endpoint accepts invalid email format without validation error,"The registration API allows users to register with an invalid email format. When posting a payload with a non-valid email (missing TLD), the endpoint returns 201 Created and creates a user record instead of rejecting the request with validation errors.","Open Postman and select the QA Assessment Local environment.
+
+Send a POST {{base_url}}/api/register request with the following JSON body:
+
+{
+  ""name"": ""QA Dup User"",
+  ""email"": ""qa_dup@gmail"",
+  ""password"": ""password"",
+  ""password_confirmation"": ""password""
+}
+
+
+Click Send and observe the response.","Status code: 422 Unprocessable Entity (or similar).
+
+JSON response indicating validation errors, e.g.:
+
+{
+  ""message"": ""The given data was invalid."",
+  ""errors"": {
+    ""email"": [""The email must be a valid email address.""]
+  }
+}
+
+
+No user record is created for invalid emails.","Status code: 201 Created.
+
+JSON response indicates a successful registration (user is created) despite invalid email format.",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,This suggests email validation rule is missing or misconfigured on the registration endpoint.,Manual API Testing
+API-AUTH-REGISTER-003,Register endpoint returns 200 OK and generic health message for empty name/email,"When calling the registration endpoint with empty name and email fields, the API returns 200 OK with the generic health message ""Laravel API is running"" instead of performing server-side validation. The endpoint should validate required fields and return a 4xx status code with detailed validation errors.","Open Postman and select the QA Assessment Local environment.
+
+Create or select the Register  New User request:
+
+Method: POST
+
+URL: {{base_url}}/api/register
+
+In the Body tab, select raw and JSON, and send the following payload:
+
+{
+  ""name"": """",
+  ""email"": """",
+  ""password"": ""password"",
+  ""password_confirmation"": ""password""
+}                                                                      Click Send.
+
+Observe the status code and response body.","Status code: 422 Unprocessable Entity (or another appropriate 4xx code).
+
+JSON response indicating validation errors for required fields, e.g.:
+
+{
+  ""message"": ""The given data was invalid."",
+  ""errors"": {
+    ""name"": [""The name field is required.""],
+    ""email"": [""The email field is required.""]
+  }
+}","Status code: 200 OK.
+
+Response body:
+
+{
+  ""message"": ""Laravel API is running""
+}
+
+
+No validation errors are returned, and the generic API health message is shown instead.",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,This behavior is inconsistent with expected registration validation and may indicate misconfigured routing or missing validation rules on the registration endpoint.,Manual API Testing
+API-AUTH-LOGOUT-001,POST /api/logout returns 500 instead of 401 when called without Authorization header,"When the logout endpoint is called without any Authorization header, the API throws an internal server error and returns a 500 HTML error page. For an unauthenticated request, the endpoint should instead return a 401 Unauthorized JSON response. This indicates that unauthenticated access is not being handled gracefully by the authentication middleware and that an exception is bubbling up instead of being converted to a proper API error.","pen Postman and select the QA Assessment Local environment.
+
+Create a request:
+
+Method: POST
+
+URL: {{base_url}}/api/logout
+
+In the Authorization tab, select No Auth.
+
+Ensure there is no Authorization header under the Headers tab.
+
+Click Send.","Status code: 401 Unauthorized
+
+JSON body similar to:
+
+{
+  ""message"": ""Unauthenticated.""
+}","Status code: 500 Internal Server Error
+
+Response body is a Laravel HTML error page with a stack trace.",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,This indicates that unauthenticated access is not being handled gracefully by the authentication middleware and that an exception is bubbling up instead of being converted to a proper API error.,Manual API Testing
+API-AUTH-LOGOUT-002,POST /api/logout returns 500 Internal Server Error when an invalid Bearer token is provided,"When calling the logout endpoint with an invalid Bearer token (a random string that is not a valid Sanctum token), the API responds with a 500 Internal Server Error and a Laravel HTML error page. The endpoint should respond with a 401 Unauthorized JSON response, indicating that the token is invalid or unauthenticated.","Open Postman and select the QA Assessment Local environment.
+
+Create a request:
+
+Method: POST
+
+URL: {{base_url}}/api/logout
+
+In the Authorization tab, choose Bearer Token.
+
+Set the token value to a random invalid string, e.g. abc123.invalid.token.
+
+Click Send.","Status code: 401 Unauthorized
+
+JSON body similar to:
+
+{
+  ""message"": ""Unauthenticated.""
+}","Status code: 500 Internal Server Error
+
+Response body is a Laravel HTML error page with a stack trace.",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,Returning a 500 suggests that invalid tokens are not being handled correctly and that an exception is not caught.,Manual API Testing
+API-AUTH-LOGOUT-003,POST /api/logout returns 500 when called again with a previously used (revoked) token,"After logging out successfully with a valid token, the same token should be considered revoked or invalid. When the client calls /api/logout again using this old token, the API responds with a 500 Internal Server Error instead of a clean 401 Unauthorized JSON response.","In Postman, log in as a valid user (admin or regular) via POST {{base_url}}/api/login and copy the access_token.
+
+Set the environment token variable or Authorization Bearer token to this value.
+
+Call POST {{base_url}}/api/logout with this token ? this is the first, valid logout.
+
+Without changing the token, call POST {{base_url}}/api/logout again.","econd call should return:
+
+Status: 401 Unauthorized (or a 200 with an idempotent already logged out style message, but never a 500),
+
+JSON response such as:
+
+{
+  ""message"": ""Unauthenticated.""
+}","Status code: 500 Internal Server Error
+
+Response is a Laravel HTML error page showing an exception.",MediumHigh,P2,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,This indicates that the application is not handling revoked/expired tokens gracefully and is throwing an uncaught exception.,Manual API Testing
+API-USERS-001,GET /api/users/{id} without token returns 500 HTML error instead of 401 JSON response,"When requesting the user details endpoint without providing an access token, the API responds with a 500 Internal Server Error and a Laravel HTML error page. The endpoint should instead return a 401 Unauthenticated JSON response for requests without valid authentication.","Open Postman and select the QA Assessment Local environment.
+
+Ensure no Authorization header is set for the request.
+
+Send a GET {{base_url}}/api/users/1 request.
+
+Observe the response status and body.","Status code: 401 Unauthorized (or similar).
+
+JSON response such as:
+
+{
+  ""message"": ""Unauthenticated.""
+}","Status code: 500 Internal Server Error.
+
+Response body is a Laravel HTML error page.",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,This violates least-privilege and should be addressed by adding role/permission checks on GET /api/users/{id}.,Manual API Testing
+API-USERS-002,Regular user can view other users' details via GET /api/users/{id},"When authenticated as a regular user, the API allows access to other users' details through the GET /api/users/{id} endpoint. For example, a normal user can retrieve the admin users profile. This indicates missing or incorrect authorization checks on this endpoint.","In Postman, log in as the regular user:
+
+POST {{base_url}}/api/login
+
+Body:
+
+{
+  ""email"": ""user@test.com"",
+  ""password"": ""password""
+}
+
+
+Copy the access_token from the response and set it as the token environment variable (or use it directly in Authorization ? Bearer Token).
+
+Send a request:
+
+Method: GET
+
+URL: {{base_url}}/api/users/1
+
+Auth: Bearer <regular user token>
+
+Observe the response.","The regular user should not be allowed to view other users by ID.
+
+API should return 403 Forbidden or 401 Unauthorized with a JSON error response.","Status: 200 OK
+
+Response body contains the full user details for user ID 1 (admin):
+
+{
+  ""id"": 1,
+  ""name"": ""Admin User"",
+  ""email"": ""admin@test.com"",
+  ""role"": ""admin"",
+  ...
+}",Citical,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+API-USERS-003,PUT /api/users/{id} accepts invalid email format instead of returning validation error,"The PUT /api/users/{id} endpoint accepts invalid email formats and updates the user record without any validation error. This happens both when an admin updates another user and when a regular user updates their own profile. As a result, users can end up with malformed email addresses in the system, which breaks assumptions about email being a valid, contactable address.","Admin updating user                              Login as admin (admin@test.com) and obtain an access token.
+
+In Postman, create a request:
+
+Method: PUT
+
+URL: {{base_url}}/api/users/2
+
+Authorization: Bearer <admin token>
+
+Body (raw JSON):
+
+{
+  ""email"": ""invalid-email""
+}
+
+
+Send the request.                                       User updating self                                           Login as regular user (user@test.com) and obtain an access token.
+
+Request:
+
+Method: PUT
+
+URL: {{base_url}}/api/users/2
+
+Authorization: Bearer <user token>
+
+Body:
+
+{
+  ""name"": ""User Self Updated"",
+  ""email"": ""invalid-email""
+}
+
+
+Send the request.","Status: 422 Unprocessable Entity.
+
+JSON validation response, e.g.:
+
+{
+  ""message"": ""The given data was invalid."",
+  ""errors"": {
+    ""email"": [""The email must be a valid email address.""]
+  }
+}
+
+
+Users email in the database should not be changed.","Status: 200 OK.
+
+Response (example for U8):
+
+{
+  ""id"": 2,
+  ""name"": ""User Self Updated"",
+  ""email"": ""invalid-email"",
+  ""role"": ""user"",
+  ...
+}
+
+
+The invalid email is stored successfully.",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+API-USERS-004,PUT /api/users/{id} returns 500 Internal Server Error when updating email to an existing users email,"When an admin attempts to update a users email to an email that already belongs to another user (e.g. setting user 2s email to admin@test.com), the API responds with a 500 Internal Server Error. The endpoint should instead return a 422 validation error indicating that the email has already been taken. The 500 suggests that a database unique constraint or similar exception is not being caught and translated into a proper API response.","Login as admin (admin@test.com) and obtain an access token.
+
+In Postman, create a request:
+
+Method: PUT
+
+URL: {{base_url}}/api/users/2
+
+Authorization: Bearer <admin token>
+
+Body:
+
+{
+  ""email"": ""admin@test.com""
+}
+
+
+Send the request.","Status: 422 Unprocessable Entity.
+
+JSON response similar to:
+
+{
+  ""message"": ""The given data was invalid."",
+  ""errors"": {
+    ""email"": [""The email has already been taken.""]
+  }
+}
+
+
+No changes made to the user record.","Status: 500 Internal Server Error.
+
+Response body is a Laravel HTML error page with a stack trace (unique constraint / database error).",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+API-USERS-005,Regular user can update admin user details via PUT /api/users/{id},"A regular (non-admin) user is able to update the admin users profile via PUT /api/users/1. This is a critical authorization issue, as non-privileged users should not be allowed to modify other users data, especially an admins details.","Login as regular user (user@test.com) and obtain an access token.
+
+In Postman, create a request:
+
+Method: PUT
+
+URL: {{base_url}}/api/users/1 (admin user)
+
+Authorization: Bearer <user token>
+
+Body:
+
+{
+  ""name"": ""Hacked Admin Name""
+}
+
+
+Send the request.","Status: 403 Forbidden (or 401 Unauthorized depending on design).
+
+JSON error message, e.g.:
+
+{
+  ""message"": ""Forbidden.""
+}
+
+
+Admin users details must not be changed.","Status: 200 OK.
+
+Response:
+
+{
+  ""id"": 1,
+  ""name"": ""Hacked Admin Name"",
+  ""email"": ""admin@test.com"",
+  ""role"": ""admin"",
+  ...
+}
+
+
+Admin users name is successfully updated by the regular user.",Critical,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+API-USERS-006,Regular user can save profile with invalid email address via PUT /api/users/{id},"When a regular user updates their own profile using PUT /api/users/{id}, the endpoint allows them to save an invalid email address (e.g. invalid-email) instead of enforcing proper email validation. This leads to corrupted user contact data and potential issues with email-based features (notifications, password resets, etc.).","Login as regular user (user@test.com) and obtain an access token.
+
+Request:
+
+Method: PUT
+
+URL: {{base_url}}/api/users/2
+
+Authorization: Bearer <user token>
+
+Body:
+
+{
+  ""name"": ""User Self Updated"",
+  ""email"": ""invalid-email""
+}
+
+
+Send the request.","Status: 422 Unprocessable Entity.
+
+JSON validation response, e.g.:
+
+{
+  ""message"": ""The given data was invalid."",
+  ""errors"": {
+    ""email"": [""The email must be a valid email address.""]
+  }
+}
+
+
+Users email in the database should not be changed.","Status: 200 OK.
+
+Response (example for U8):
+
+{
+  ""id"": 2,
+  ""name"": ""User Self Updated"",
+  ""email"": ""invalid-email"",
+  ""role"": ""user"",
+  ...
+}
+
+
+The invalid email is stored successfull",High,P1,"ocal Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-PL-FMT-001,GET /api/products returned as string instead of numeric value,"The price field is returned as a string (e.g., ""23.72"").
+If the price is intended to be numeric in API spec, this should be a number type (23.72).","Login as admin
+
+Send GET /api/products
+
+Inspect product objects in response",price should be returned as number (float/decimal) based on common REST conventions.,Returned as string.,Low,P3,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-CREATE-VAL-001,POST /api/products with invalid/missing fields returns 500 (DB error) instead of 422 validation errors,"When creating a product with missing or invalid fields, the API throws a database QueryException and returns 500 Internal Server Error. The request is not validated at the application level (e.g. name required, price numeric).","Authenticate as admin and obtain Bearer token.
+
+Send POST /api/products with body:
+
+{
+  ""name"": """",
+  ""description"": ""No name, no price"",
+  ""price"": """",
+  ""stock"": null,
+  ""category"": """"
+}
+
+
+Observe response.","422 Unprocessable Entity.
+
+JSON with validation errors for name, price, and any other required fields.",500 Internal Server Error,High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-AUTH-UNAUTH-001,Title: Unauthenticated POST /api/products returns 500 with Route [login] not defined instead of 401 JSON,"When sending an unauthenticated POST /api/products request, the API responds with a 500 Internal Server Error instead of returning a proper 401 Unauthorized JSON response. Because the request does not include an Accept: application/json header, Laravels Authenticate middleware attempts to redirect the client to a non-existent login route. Since this route is not defined in this API-only project, Laravel throws a RouteNotFoundException (Route [login] not defined). This results in a server crash and an HTML error page being returned instead of the expected JSON error structure.","Do not send any Authorization header.
+
+Send POST /api/products with any valid body.
+
+Observe response.","401 Unauthorized with JSON: {""message"":""Unauthenticated.""}","500 Internal Server Error, HTML response with Route [login] not defined from Authenticate middleware.",Critical,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-AUTH-ROLE-001,Normal user can create products (admin-only endpoint),"The POST /api/products endpoint allows normal authenticated users to create new products successfully. According to the API specification, product creation is intended to be an admin-only operation. However, there is no authorization/role check implemented in the controller or route protection. As a result, any regular user with a valid Sanctum token can add products to the catalog.","Login as a normal user:
+
+POST /api/login
+{
+  ""email"": ""user@test.com"",
+  ""password"": ""password""
+}
+
+
+Copy the token from the login response.
+
+Send the following request:
+
+POST /api/products
+Authorization: Bearer <user_token>
+Accept: application/json
+Content-Type: application/json
+
+
+Body:
+
+{
+  ""name"": ""QA Product Created by Normal User"",
+  ""description"": ""Attempt to create product as non-admin user"",
+  ""price"": 29.99,
+  ""stock"": 10,
+  ""category"": ""Toys""
+}
+
+
+Observe the response.","Normal users should NOT be allowed to create products.
+
+The endpoint should return:
+
+{
+  ""message"": ""This action is unauthorized.""
+}
+
+
+With the status:
+
+403 Forbidden
+(or 401 Unauthorized, depending on the project conventions)","Request succeeds with 200/201.
+
+Product is created in the database.
+
+No authorization error is returned.
+
+Example response:
+
+{
+  ""name"": ""QA Product Created by Normal User"",
+  ""description"": ""Attempt to create product as non-admin user"",
+  ""price"": 29.99,
+  ""stock"": 10,
+  ""category"": ""Toys"",
+  ""updated_at"": ""..."",
+  ""created_at"": ""..."",
+  ""id"": 12
+}",Critical,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux","This is a critical security flaw, as it allows unauthorized modification of core business data, introduces data integrity risks, and enables malicious actions from basic users.",,Manual API Testing
+PRODUCTS-AUTH-ROLE-002,Normal user can update existing products (admin-only endpoint),Normal user can create products (admin-only endpoint),"Login as normal user:
+
+POST /api/login
+
+Body:
+
+{
+  ""email"": ""user@test.com"",
+  ""password"": ""password""
+}
+
+
+Copy the token from the response (user_token).
+
+Send:
+
+POST /api/products
+
+Headers:
+
+Accept: application/json
+
+Content-Type: application/json
+
+Authorization: Bearer <user_token>
+
+Body:
+
+{
+  ""name"": ""QA Product Created by Normal User"",
+  ""description"": ""Attempt to create product as non-admin user"",
+  ""price"": 29.99,
+  ""stock"": 10,
+  ""category"": ""Toys""
+}","HTTP 403 Forbidden (or 401 depending on convention).
+
+JSON error, e.g.:
+
+{
+  ""message"": ""This action is unauthorized.""
+}
+
+
+No product created.","HTTP 200/201.
+
+Product is created successfully:
+
+{
+  ""name"": ""QA Product Created by Normal User"",
+  ""description"": ""Attempt to create product as non-admin user"",
+  ""price"": 29.99,
+  ""stock"": 10,
+  ""category"": ""Toys"",
+  ""created_at"": ""..."",
+  ""updated_at"": ""..."",
+  ""id"": 12
+}
+
+
+Normal user has full create rights on products.",Critical,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-AUTH-ROLE-003,Normal user can delete products (admin-only endpoint),"The DELETE /api/products/{id} endpoint is intended to be admin-only, but normal authenticated users (non-admin) are able to delete products successfully. When a normal user sends a DELETE request with a valid product ID, the API responds with a success message and the product is removed from the database. This is a critical authorization flaw because it allows non-admin users to perform destructive operations on the product catalog.","Login as a normal (non-admin) user:
+
+Endpoint: POST /api/login
+
+Body:
+
+{
+  ""email"": ""user@test.com"",
+  ""password"": ""password""
+}
+
+
+Copy the token from the response (user_token).
+
+Confirm there is an existing product to delete (for example, ID 11):
+
+Optional check as admin: GET /api/products/11 ? 200 OK with product details.
+
+As the normal user, send a delete request:
+
+Endpoint: DELETE /api/products/11
+
+Headers:
+
+Accept: application/json
+
+Authorization: Bearer <user_token>
+
+Observe the response from the DELETE request.
+
+Optionally, verify as admin:
+
+GET /api/products/11
+
+Confirm that the product no longer exists (404 or not returned in the list).","Since product deletion is an admin-only operation, a normal user should not be allowed to delete products.
+
+Expected API behavior:
+
+HTTP status: 403 Forbidden (or 401 Unauthorized, depending on the projects access-control design).
+
+Response body example:
+
+{
+  ""message"": ""This action is unauthorized.""
+}
+
+
+The product should remain in the database and still be retrievable by admin.","HTTP status: 200 OK (or success code).
+
+Response body:
+
+{
+  ""message"": ""Product deleted successfully""
+}
+
+
+The product is actually deleted from the database and can no longer be fetched afterwards.
+
+A normal, non-admin user has the ability to perform destructive operations on products.",Critical,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",Must be addressed urgently. It violates access control requirements and compromises system integrity.,,Manual API Testing
+PRODUCTS-CREATE-VAL-001,POST /api/products with invalid/missing fields returns 500 instead of 422,500 on invalid create,"Login as admin using:
+
+POST /api/login with
+
+{ ""email"": ""admin@test.com"", ""password"": ""password"" }
+
+
+Copy the token from the response.
+
+Send a request:
+
+POST /api/products
+
+Headers:
+
+Accept: application/json
+
+Content-Type: application/json
+
+Authorization: Bearer <admin_token>
+
+Body:
+
+{
+  ""name"": """",
+  ""description"": ""No name, no price"",
+  ""price"": """",
+  ""stock"": null,
+  ""category"": """"
+}
+
+
+Observe the response.","HTTP 422 Unprocessable Entity
+
+JSON validation error, e.g.:
+
+{
+  ""message"": ""The given data was invalid."",
+  ""errors"": {
+    ""name"": [""The name field is required.""],
+    ""price"": [""The price field is required.""]
+  }
+}
+
+
+No database error or stack trace.","HTTP 500 Internal Server Error
+
+JSON with an internal error message and stack trace, e.g.
+
+Illuminate\Database\QueryException
+
+Integrity / type error when inserting invalid data for price / name.",Critical,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-UPDATE-VAL-001,Product update with invalid or missing fields returns 500 instead of 422,"Updating a product with empty or invalid fields causes a database error because no validation is applied before attempting to save the data. Instead of a controlled validation error (422), the endpoint crashes with a QueryException.","Login as admin and get a valid token.
+
+Ensure there is an existing product (e.g. ID 11 from previous tests).
+
+Send a request:
+
+PUT /api/products/11
+
+Headers:
+
+Accept: application/json
+
+Content-Type: application/json
+
+Authorization: Bearer <admin_token>
+
+Body:
+
+{
+  ""name"": """",
+  ""description"": ""Invalid update test"",
+  ""price"": """",
+  ""stock"": null,
+  ""category"": """"
+}
+
+
+Observe the response.","HTTP 422 Unprocessable Entity
+
+JSON validation errors for name, price, etc.
+
+No DB-level error.","HTTP 500 Internal Server Error
+
+JSON like:
+
+{
+  ""message"": ""SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'name' cannot be null ..."",
+  ""exception"": ""Illuminate\\Database\\QueryException"",
+  ...
+}
+
+
+Laravel surfaces a QueryException from MySQL instead of a validation error.",High,P1,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-UPDATE-NOTFOUND-001,Updating non-existing product returns framework exception details instead of clean 404 JSON,Exception details leaked on 404,"Login as admin and obtain token.
+
+Send:
+
+PUT /api/products/9999 (ID that does not exist)
+
+Headers:
+
+Accept: application/json
+
+Content-Type: application/json
+
+Authorization: Bearer <admin_token>
+
+Body:
+
+{
+  ""name"": ""Non-existing product"",
+  ""description"": ""Should 404"",
+  ""price"": 10,
+  ""stock"": 1,
+  ""category"": ""Books""
+}","HTTP 404 Not Found
+
+Clean JSON, e.g.:
+
+{
+  ""message"": ""Product not found.""
+}
+
+
+No internal class names or stack trace.","HTTP 404 but with internal exception details, e.g.:
+
+{
+  ""message"": ""No query results for model [App\\Models\\Product] 9999"",
+  ""exception"": ""Symfony\\Component\\HttpKernel\\Exception\\NotFoundHttpException"",
+  ...
+}
+
+
+Response leaks internal model names and framework class names.",Medium,P2,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,,Manual API Testing
+PRODUCTS-DELETE-NOTFOUND-001,Deleting non-existing product ID returns internal exception details instead of clean 404 JSON,"When attempting to delete a product that does not exist, the API responds with HTTP 404 but includes internal exception details in the response body. The error message exposes the underlying Eloquent model class (App\\Models\\Product), framework exception class (NotFoundHttpException), file paths, and stack trace. This leaks implementation details and is not suitable for a production-facing REST API, where a simple, sanitized 404 JSON error should be returned instead.","Login as admin via API:
+
+Endpoint: POST /api/login
+
+Body:
+
+{
+  ""email"": ""admin@test.com"",
+  ""password"": ""password""
+}
+
+
+Copy the token value from the response.
+
+Send a DELETE request for a non-existing product ID:
+
+Endpoint: DELETE /api/products/999 (or any ID that does not exist)
+
+Headers:
+
+Accept: application/json
+
+Authorization: Bearer <admin_token>
+
+Observe the response body and status code.","HTTP status: 404 Not Found
+
+Response body should be a clean, minimal JSON error, for example:
+
+{
+  ""message"": ""Product not found.""
+}
+
+
+No internal framework details, model names, file paths, or stack traces should be exposed.","HTTP status: 404 Not Found
+
+Response body contains internal framework and application details, e.g.:
+
+{
+  ""message"": ""No query results for model [App\\Models\\Product] 999"",
+  ""exception"": ""Symfony\\Component\\HttpKernel\\Exception\\NotFoundHttpException"",
+  ""file"": ""/.../vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php"",
+  ""line"": 487,
+  ""trace"": [
+    ...
+  ]
+}
+
+
+This reveals the internal model name, exception class, file path, and stack trace.",Medium,P2,"Local Laravel API (http://127.0.0.1:8000)
+
+Seeded DB
+
+Postman v10
+
+OS: Linux",,"Should be fixed as part of standardizing error handling and hardening the API, but does not completely block core product functionality.",Manual API Testing
+AUTO-ORDERS-001,Admin order status update fails with UNIQUE constraint error on users.email,"When running automated tests, updating an order status as admin causes a database UNIQUE constraint violation on users.email. This happens because the test setup or application logic attempts to insert an admin user with an email that already exists (admin@test.com).","1. Run `php artisan test` in the laravel-project root.
+2. Observe the failing test: Tests\Feature\Api\OrdersApiTest > admin can update order status.
+3. Inspect the error output in the console.",Admin user is authenticated successfully and can update the order status. The API should return 200 OK with the updated order payload.,The test fails with a 500 Internal Server Error. The console shows SQLSTATE[23000] UNIQUE constraint failed: users.email for admin@test.com on the sqlite testing connection.,High,P1,"Laravel API, PHPUnit tests, SQLite in-memory testing DB, PHP 8.3, Ubuntu Linux",,Discovered via automated Laravel Orders API tests (admin status update scenario).,Automated Laravel Tests
+AUTO-PRODUCTS-INVALID-PRICE,Creating product with invalid price returns 201 instead of 422 validation error,"The Products API allows creation of a product with an invalid price (e.g. non-numeric or malformed value). Automated tests expect server-side validation to reject such input, but the endpoint responds with 201 Created.","1. Ensure automated tests are configured and DB is migrated.
+2. Run `php artisan test`.
+3. Check failing test: Tests\Feature\Api\ProductsApiTest > creating product with invalid price returns validation error.",The API should return HTTP 422 Unprocessable Entity and include a validation error for the price field (e.g. price must be a valid numeric/decimal value).,The API returns HTTP 201 Created and successfully creates the product record with an invalid price value.,High,P1,"Laravel API, PHPUnit tests, SQLite testing DB, PHP 8.3, Ubuntu Linux",,Validation gap on Products store endpoint. Detected by automated test ProductsApiTest::creating_product_with_invalid_price_returns_validation_error.,Automated Laravel Tests
+AUTO-PRODUCTS-NONADMIN-CREATE,Normal user can create products instead of receiving 403 Forbidden,Role-based access control for product creation is not enforced. A non-admin (regular) user is able to create new products successfully via POST /api/products.,"1. In automated tests, authenticate as a normal user (role=user).
+2. Call POST /api/products with a valid product payload.
+3. Observe the response in ProductsApiTest > normal user cannot create product.",The API should return HTTP 403 Forbidden for non-admin users attempting to create a product.,"The API returns HTTP 201 Created and the product is persisted, granting unauthorized access to product creation.",Critical,P1,"Laravel API, PHPUnit tests, SQLite testing DB, PHP 8.3, Ubuntu Linux",,Authorization issue on Products store endpoint. Detected via automated ProductsApiTest.,Automated Laravel Tests
+AUTO-PRODUCTS-ADMIN-UPDATE-500,Admin product update returns 500 Internal Server Error instead of 200 OK,"When an admin attempts to update an existing product via PUT /api/products/{id}, the endpoint responds with a 500 Internal Server Error instead of successfully updating the record.","1. Run automated tests using `php artisan test`.
+2. Observe failing test: Tests\Feature\Api\ProductsApiTest > admin can update product.
+3. The test sends a valid update payload as an admin user.",The API should return HTTP 200 OK and the response JSON should contain the updated product data (e.g. updated name).,The API responds with HTTP 500 Internal Server Error. The product is not confirmed as updated in the database.,High,P1,"Laravel API, PHPUnit tests, SQLite testing DB, PHP 8.3, Ubuntu Linux",,Server-side error in Products update endpoint. Exact stack trace visible in test run output.,Automated Laravel Tests
+AUTO-PRODUCTS-NONADMIN-UPDATE-500,Normal user updating product returns 500 instead of 403 Forbidden,A regular user attempting to update a product triggers a 500 Internal Server Error instead of a clean 403 Forbidden response. This indicates both error handling and authorization issues on the product update path.,"1. In automated tests, log in as a normal user.
+2. Call PUT /api/products/{id} with a valid update payload.
+3. Observe failing test: Tests\Feature\Api\ProductsApiTest > normal user cannot update product.","The API should return HTTP 403 Forbidden, clearly indicating that non-admin users cannot update products.",The API returns HTTP 500 Internal Server Error when a non-admin user attempts to update a product.,High,P1,"Laravel API, PHPUnit tests, SQLite testing DB, PHP 8.3, Ubuntu Linux",,Authorization should be enforced and error handling improved on Products update endpoint.,Automated Laravel Tests
+AUTO-USERS-NONADMIN-LIST,Normal user can list all users instead of being denied access,"The Users index endpoint (/api/users) is accessible to non-admin users. Automated tests show that a regular user can retrieve the full list of users, which is a security/privacy risk.","1. In automated tests, authenticate as a normal user (role=user).
+2. Send GET /api/users.
+3. Observe failing test: Tests\Feature\Api\UsersApiTest > normal user cannot list all users.",The API should return HTTP 403 Forbidden for non-admin users attempting to access /api/users.,"The API returns HTTP 200 OK and returns the full list of users, exposing other users’ data to non-admins.",Critical,P1,"Laravel API, PHPUnit tests, SQLite testing DB, PHP 8.3, Ubuntu Linux",,Security/authorization bug on Users index endpoint.,Automated Laravel Tests
+AUTO-USERS-INVALID-EMAIL,Updating user with invalid email does not return validation error,"User update endpoint allows an invalid email format to be saved. The automated test attempts to update a user with an incorrect email string and expects validation to fail, but the API responds with 200 OK.","1. Authenticate as admin in automated tests.
+2. Send PUT /api/users/{id} with an invalid email value (e.g. ""not-an-email"").
+3. Observe failing test: Tests\Feature\Api\UsersApiTest > updating user with invalid email returns validation error.",The API should return HTTP 422 Unprocessable Entity with a validation error on the email field.,The API returns HTTP 200 OK and accepts the invalid email value.,Medium,P2,"Laravel API, PHPUnit tests, SQLite testing DB, PHP 8.3, Ubuntu Linux",,Validation rule for email on user update appears missing or incorrect.,Automated Laravel Tests
+AUTO-USERS-NONADMIN-UPDATE-ADMIN,Normal user can update admin user details instead of receiving 403 Forbidden,Access control on the Users update endpoint allows a normal user to modify an admin user's details. This is a critical privilege escalation issue.,"1. In automated tests, create an admin user and a normal user.
+2. Authenticate as the normal user.
+3. Send PUT /api/users/{admin_id} with an update payload.
+4. Observe failing test: Tests\Feature\Api\UsersApiTest > normal user cannot update admin.",The API should return HTTP 403 Forbidden when a non-admin user attempts to update an admin user.,"The API returns HTTP 200 OK, allowing the normal user to update the admin user's data.",Critical,P1,"Laravel API, PHPUnit tests, SQLite testing DB, PHP 8.3, Ubuntu Linux",,Severe authorization issue on Users update endpoint. Detected in automated UsersApiTest.,Automated Laravel Tests
+FLUTTER-API-ORDERS-CLIENT-001,Orders API client in ApiService fails due to incorrect response mapping,"The Flutter ApiService.getOrders() method originally assumed the decoded JSON response was a List and called response.map((json) => Order.fromJson(json)).toList(), while the backend actually returns a Map (e.g. { ""data"": [...] }). This caused Dart type errors and prevented the Flutter app and widget tests from compiling until the mapping was corrected.","1. Use the original ApiService.getOrders() implementation that calls response.map(...).toList() on the decoded JSON.
+2. Run `flutter test test/widget_test.dart` or try to build the Flutter app.
+3. Observe compilation errors originating from ApiService.getOrders() treating the decoded response as a List instead of a Map.",ApiService.getOrders() should correctly parse the orders JSON payload (e.g. reading from a `data` or `orders` array) and return a List<Order> without causing compile-time errors.,"Dart compilation fails with type and map-related errors (e.g. 'A value of type Order can't be returned from a function with return type MapEntry<dynamic, dynamic>'). Widget tests and app builds are blocked until the mapping logic is fixed.",High,P1,"Flutter QA Assessment App
+Flutter SDK (stable), Android Emulator (API 33)
+Local Laravel API: http://127.0.0.1:8000/api",,"Discovered during Flutter widget test execution. Fix involved decoding the response from the API, handling both Map/List shapes explicitly, and mapping each element to Order.fromJson.",Automated Flutter Tests
+API-ORDERS-PAYLOAD-STRUCTURE-001,POST /api/orders requires items[] payload instead of simple product_id/quantity,"Initial integration tests attempted to create an order by POSTing { ""product_id"": <id>, ""quantity"": 1 } to /api/orders. The API responded with HTTP 422 and the message ""The items field is required."", indicating that the endpoint expects an items[] array structure.","1. Authenticate as a valid user and obtain a bearer token.
+2. Send POST http://127.0.0.1:8000/api/orders with JSON body:
+   { ""product_id"": 1, ""quantity"": 1 }
+   and header Authorization: Bearer <token>.
+3. Observe the HTTP 422 response with a validation error for the items field.","Either the API should accept a simple product_id + quantity payload for single-product orders, or the required items[] structure should be clearly documented and consistently used by all clients.","API returns 422 Unprocessable Entity with the message ""The items field is required."" Orders cannot be created unless the client constructs an items array payload manually.",Medium,P2,"Local Laravel API (http://127.0.0.1:8000/api)
+Triggered from Flutter integration tests running on the host machine.",,"Discovered via end-to-end Flutter API test. The test was later updated to use the required structure:
+{ ""items"": [ { ""product_id"": <id>, ""quantity"": 1 } ] }, after which the workflow passed.",Automated Flutter Tests

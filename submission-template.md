@@ -1,14 +1,14 @@
 # QA Assessment Submission Template
 
-**Candidate Name**: [Your Name]
+**Candidate Name**: Maxine R. Mutasa
 
-**Email**: [Your Email]
+**Email**: maxinemutasa00@gmail.com
 
-**Phone**: [Your Phone Number]
+**Phone**: +263783062941
 
-**Submission Date**: [Date]
+**Submission Date**: 25/11.2025
 
-**GitHub/GitLab Repository URL**: [Repository URL]
+**GitHub/GitLab Repository URL**: https://github.com/maxxine29/Take-Home-Assessment.git
 
 
 
@@ -20,20 +20,20 @@ Check off each item as you complete it:
 
 ### Required Deliverables
 
-- [ ] Test Strategy Document (`test-strategy.md` or `.pdf`)
-- [ ] Test Plan with 50+ test cases (`test-plan.xlsx` or `.md`)
-- [ ] Bug Reports - 30+ bugs (`bug-reports.xlsx` or bug tracking export)
-- [ ] Laravel Automated Tests (80%+ coverage)
-- [ ] Flutter Automated Tests (80%+ coverage)
-- [ ] Postman Collection (`api-tests.postman_collection.json`)
-- [ ] Postman Environment (`api-tests.postman_environment.json`)
-- [ ] Automated API Tests
-- [ ] Performance Test Report (`performance-test-report.md`)
-- [ ] Test Execution Report (`test-execution-report.md`)
-- [ ] Bug Tracking Dashboard (`bug-dashboard.xlsx`)
-- [ ] Test Metrics Report (`test-metrics-report.md`)
-- [ ] Test Summary Report (`test-summary-report.md`)
-- [ ] CI/CD Configuration (`.github/workflows/tests.yml` or `.gitlab-ci.yml`)
+- [ ✓] Test Strategy Document (`test-strategy.md` or `.pdf`)
+- [✓ ] Test Plan with 50+ test cases (`test-plan.xlsx` or `.md`)
+- [ ✓] Bug Reports - 30+ bugs (`bug-reports.xlsx` or bug tracking export)
+- [ ✓] Laravel Automated Tests (80%+ coverage)
+- [ ✓] Flutter Automated Tests (80%+ coverage)
+- [ ✓] Postman Collection (`api-tests.postman_collection.json`)
+- [✓ ] Postman Environment (`api-tests.postman_environment.json`)
+- [✓ ] Automated API Tests
+- [ ✓] Performance Test Report (`performance-test-report.md`)
+- [ ✓] Test Execution Report (`test-execution-report.md`)
+- [ ✓] Bug Tracking Dashboard (`bug-dashboard.xlsx`)
+- [ ✓] Test Metrics Report (`test-metrics-report.md`)
+- [ ✓] Test Summary Report (`test-summary-report.md`)
+- [ ✓] CI/CD Configuration (`.github/workflows/tests.yml` or `.gitlab-ci.yml`)
 
 ### Bonus Deliverables (Optional)
 
